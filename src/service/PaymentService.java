@@ -1,4 +1,88 @@
 package service;
 
+import domain.booking.Booking;
+import domain.booking.BookingStatus;
+import payment.CardPayment;
+import payment.Payment;
+import payment.WalletPayment;
+import repo.BookingRepository;
+
 public class PaymentService {
+
+    private final BookingRepository bookingRepo;
+
+    public PaymentService(BookingRepository bookingRepo) {
+        this.bookingRepo = bookingRepo;
+    }
+
+    public Payment pay(String bookingId, String last4) {
+
+        if (last4 == null || !last4.matches("\\d{4}")) {
+            throw new IllegalArgumentException("Card last4 must be exactly 4 digits");
+        }
+
+        Booking booking = bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new IllegalStateException("Only CONFIRMED bookings can be paid");
+        }
+
+        if (booking.getPayment() != null) {
+            throw new IllegalStateException("Booking already paid");
+        }
+
+        Payment payment = new CardPayment(
+                booking.getCalculatedPrice(),
+                "PAY-" + booking.getId(),
+                last4
+        );
+
+        payment.capture();
+        booking.attachPayment(payment);
+
+        return payment;
+    }
+
+    public Payment payWithWallet(String bookingId) {
+
+        Booking booking = bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new IllegalStateException("Only CONFIRMED bookings can be paid");
+        }
+
+        if (booking.getPayment() != null) {
+            throw new IllegalStateException("Booking already paid");
+        }
+
+        Payment payment = new WalletPayment(
+                booking.getCalculatedPrice(),
+                "PAY-" + booking.getId()
+        );
+
+        payment.capture();
+        booking.attachPayment(payment);
+
+        return payment;
+    }
+
+    public void refund(String bookingId) {
+
+        if (bookingId == null || bookingId.isBlank()) {
+            throw new IllegalArgumentException("Booking ID cannot be null or empty");
+        }
+
+        Booking booking = bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        Payment payment = booking.getPayment();
+
+        if (payment == null) {
+            throw new IllegalStateException("No payment to refund");
+        }
+
+        payment.refund();
+    }
 }
