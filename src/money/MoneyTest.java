@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MoneyTest {
-
     @Test
     void shouldCreateMoneyFromString() {
         Money money = Money.of("10.123");
@@ -92,27 +91,35 @@ class MoneyTest {
     void shouldThrowExceptionWhenAddingNull() {
         Money money = Money.of("10.00");
 
-        assertThrows(IllegalArgumentException.class, () -> money.add(null));
+        assertThrows(NullPointerException.class, () -> money.add(null));
     }
 
     @Test
     void shouldThrowExceptionWhenSubtractingNull() {
         Money money = Money.of("10.00");
 
-        assertThrows(IllegalArgumentException.class, () -> money.subtract(null));
+        assertThrows(NullPointerException.class, () -> money.subtract(null));
     }
 
     @Test
     void shouldThrowExceptionWhenComparingNull() {
         Money money = Money.of("10.00");
 
-        assertThrows(IllegalArgumentException.class, () -> money.compareTo(null));
+        assertThrows(NullPointerException.class, () -> money.compareTo(null));
     }
 
     @Test
     void shouldThrowExceptionWhenMultiplierIsNull() {
         Money money = Money.of("10.00");
 
-        assertThrows(IllegalArgumentException.class, () -> money.multiply((BigDecimal) null));
+        assertThrows(NullPointerException.class, () -> money.multiply((BigDecimal) null));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSubtractingToNegative() {
+        Money m1 = Money.of("10.00");
+        Money m2 = Money.of("20.00");
+
+        assertThrows(IllegalArgumentException.class, () -> m1.subtract(m2));
     }
 }

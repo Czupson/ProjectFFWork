@@ -1,39 +1,36 @@
 package pricing;
 
-import domain.booking.Booking;
+import domain.resource.Resource;
 import money.Money;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 public class HappyHoursPricing implements PricingPolicy {
+    private static final BigDecimal DISCOUNT_RATE = BigDecimal.valueOf(0.70);
 
-    private static final BigDecimal DISCOUNT = BigDecimal.valueOf(0.30);
+    private static final int HAPPY_HOURS_START = 14;
+    private static final int HAPPY_HOURS_END = 16;
 
     @Override
-    public Money price(Booking booking) {
-        if (booking == null) {
-            throw new IllegalArgumentException("Booking cannot be null");
-        }
+    public Money price(Resource resource, LocalDateTime start, LocalDateTime end) {
+        Objects.requireNonNull(resource, "Resource cannot be null");
+        Objects.requireNonNull(start, "Start cannot be null");
+        Objects.requireNonNull(end, "End cannot be null");
 
-        int minutes = booking.durationMinutes();
+        BigDecimal total = PricingMath.basePrice(resource, start, end);
 
-        BigDecimal hourlyRate = booking.getResource().hourlyRate().getAmount();
-
-        BigDecimal pricePerMinute = hourlyRate.divide(
-                BigDecimal.valueOf(60),
-                10,
-                RoundingMode.HALF_UP
-        );
-
-        BigDecimal total = pricePerMinute.multiply(BigDecimal.valueOf(minutes));
-
-        int hour = booking.getStart().getHour();
-
-        if (hour >= 14 && hour < 16) {
-            total = total.multiply(BigDecimal.ONE.subtract(DISCOUNT));
+        if (isHappyHours(start)) {
+            total = total.multiply(DISCOUNT_RATE);
         }
 
         return new Money(total.setScale(2, RoundingMode.HALF_UP));
+    }
+
+    private boolean isHappyHours(LocalDateTime start) {
+        int hour = start.getHour();
+        return hour >= HAPPY_HOURS_START && hour < HAPPY_HOURS_END;
     }
 }

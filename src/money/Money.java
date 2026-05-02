@@ -5,13 +5,22 @@ import java.math.RoundingMode;
 import java.util.Objects;
 
 public final class Money implements Comparable<Money> {
+    private static final String CURRENCY = "PLN";
+
     private final BigDecimal amount;
 
     public Money(final BigDecimal amount) {
         if (amount == null) {
             throw new IllegalArgumentException("Amount cannot be null");
         }
-        this.amount = amount.setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal normalized = amount.setScale(2, RoundingMode.HALF_UP);
+
+        if (normalized.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Amount cannot be negative");
+        }
+
+        this.amount = normalized;
     }
 
     public static Money of(String value) {
@@ -23,19 +32,17 @@ public final class Money implements Comparable<Money> {
     }
 
     public Money add(Money other) {
-        requireNonNull(other);
+        Objects.requireNonNull(other, "Money cannot be null");
         return new Money(amount.add(other.amount));
     }
 
     public Money subtract(Money other) {
-        requireNonNull(other);
+        Objects.requireNonNull(other, "Money cannot be null");
         return new Money(amount.subtract(other.amount));
     }
 
     public Money multiply(BigDecimal multiplier) {
-        if (multiplier == null) {
-            throw new IllegalArgumentException("Multiplier cannot be null");
-        }
+        Objects.requireNonNull(multiplier, "Multiplier cannot be null");
         return new Money(amount.multiply(multiplier));
     }
 
@@ -45,7 +52,7 @@ public final class Money implements Comparable<Money> {
 
     @Override
     public int compareTo(Money other) {
-        requireNonNull(other);
+        Objects.requireNonNull(other, "Money cannot be null");
         return this.amount.compareTo(other.amount);
     }
 
@@ -55,7 +62,7 @@ public final class Money implements Comparable<Money> {
 
     @Override
     public String toString() {
-        return amount.toString() + " PLN";
+        return amount + " " + CURRENCY;
     }
 
     @Override
@@ -68,12 +75,6 @@ public final class Money implements Comparable<Money> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(amount);
-    }
-
-    private void requireNonNull(Money other){
-        if (other == null) {
-            throw new IllegalArgumentException("Money cannot be null");
-        }
+        return amount.stripTrailingZeros().hashCode();
     }
 }

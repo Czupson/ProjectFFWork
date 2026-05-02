@@ -8,7 +8,6 @@ import payment.WalletPayment;
 import repo.BookingRepository;
 
 public class PaymentService {
-
     private final BookingRepository bookingRepo;
 
     public PaymentService(BookingRepository bookingRepo) {
@@ -16,21 +15,10 @@ public class PaymentService {
     }
 
     public Payment pay(String bookingId, String last4) {
+        validateBookingId(bookingId);
+        validateLast4(last4);
 
-        if (last4 == null || !last4.matches("\\d{4}")) {
-            throw new IllegalArgumentException("Card last4 must be exactly 4 digits");
-        }
-
-        Booking booking = bookingRepo.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
-
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new IllegalStateException("Only CONFIRMED bookings can be paid");
-        }
-
-        if (booking.getPayment() != null) {
-            throw new IllegalStateException("Booking already paid");
-        }
+        Booking booking = getConfirmedUnpaidBooking(bookingId);
 
         Payment payment = new CardPayment(
                 booking.getCalculatedPrice(),
@@ -38,16 +26,53 @@ public class PaymentService {
                 last4
         );
 
-        payment.capture();
-        booking.attachPayment(payment);
-
-        return payment;
+        return processPayment(booking, payment);
     }
 
     public Payment payWithWallet(String bookingId) {
+        validateBookingId(bookingId);
 
-        Booking booking = bookingRepo.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+        Booking booking = getConfirmedUnpaidBooking(bookingId);
+
+        Payment payment = new WalletPayment(
+                booking.getCalculatedPrice(),
+                "PAY-" + booking.getId()
+        );
+
+        return processPayment(booking, payment);
+    }
+
+    public void refund(String bookingId) {
+        validateBookingId(bookingId);
+
+        Booking booking = findBooking(bookingId);
+        Payment payment = booking.getPayment();
+
+        if (payment == null) {
+            throw new IllegalStateException("No payment to refund");
+        }
+
+        if (payment instanceof WalletPayment wallet) {
+            wallet.refund();
+        } else {
+            throw new IllegalStateException("Only wallet payments can be refunded");
+        }
+    }
+
+    private void validateBookingId(String bookingId) {
+        if (bookingId == null || bookingId.isBlank()) {
+            throw new IllegalArgumentException("Booking ID cannot be null or empty");
+        }
+    }
+
+    private void validateLast4(String last4) {
+        if (last4 == null || !last4.matches("\\d{4}")) {
+            throw new IllegalArgumentException("Card last4 must be exactly 4 digits");
+        }
+    }
+
+    private Booking getConfirmedUnpaidBooking(String bookingId) {
+        Booking booking = findBooking(bookingId);
 
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new IllegalStateException("Only CONFIRMED bookings can be paid");
@@ -57,32 +82,17 @@ public class PaymentService {
             throw new IllegalStateException("Booking already paid");
         }
 
-        Payment payment = new WalletPayment(
-                booking.getCalculatedPrice(),
-                "PAY-" + booking.getId()
-        );
-
-        payment.capture();
-        booking.attachPayment(payment);
-
-        return payment;
+        return booking;
     }
 
-    public void refund(String bookingId) {
-
-        if (bookingId == null || bookingId.isBlank()) {
-            throw new IllegalArgumentException("Booking ID cannot be null or empty");
-        }
-
-        Booking booking = bookingRepo.findById(bookingId)
+    private Booking findBooking(String bookingId) {
+        return bookingRepo.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+    }
 
-        Payment payment = booking.getPayment();
-
-        if (payment == null) {
-            throw new IllegalStateException("No payment to refund");
-        }
-
-        payment.refund();
+    private Payment processPayment(Booking booking, Payment payment) {
+        payment.capture();
+        booking.attachPayment(payment);
+        return payment;
     }
 }

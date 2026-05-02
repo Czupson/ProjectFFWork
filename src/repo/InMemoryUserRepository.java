@@ -4,6 +4,7 @@ import domain.user.User;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class InMemoryUserRepository implements UserRepository {
@@ -11,16 +12,29 @@ public class InMemoryUserRepository implements UserRepository {
 
     @Override
     public void add(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException("User cannot be null");
+        Objects.requireNonNull(user, "User cannot be null");
+
+        String email = user.getEmail();
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
         }
+
+        if (findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("User with email already exists: " + email);
+        }
+
         users.add(user);
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return users.stream().
-                filter(u -> u.getEmail().equals(email)).findFirst();
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+
+        return users.stream()
+                .filter(u -> u.getEmail().equals(email))
+                .findFirst();
     }
 
     @Override

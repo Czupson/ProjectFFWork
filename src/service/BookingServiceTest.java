@@ -31,8 +31,6 @@ class BookingServiceTest {
     @BeforeEach
     void setUp() {
         service = new BookingService(
-                new InMemoryUserRepository(),
-                new InMemoryResourceRepository(),
                 new InMemoryBookingRepository(),
                 new StandardPricing()
         );

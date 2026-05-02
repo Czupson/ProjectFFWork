@@ -6,10 +6,14 @@ import money.Money;
 import payment.Payment;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 public class Booking {
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+
     private final String id;
     private final User user;
     private final Resource resource;
@@ -43,37 +47,14 @@ public class Booking {
         this.payment = null;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public Resource getResource() {
-        return resource;
-    }
-
-    public LocalDateTime getStart() {
-        return start;
-    }
-
-    public LocalDateTime getEnd() {
-        return end;
-    }
-
-    public Money getCalculatedPrice() {
-        return calculatedPrice;
-    }
-
-    public BookingStatus getStatus() {
-        return status;
-    }
-
-    public Payment getPayment() {
-        return payment;
-    }
+    public String getId() { return id; }
+    public User getUser() { return user; }
+    public Resource getResource() { return resource; }
+    public LocalDateTime getStart() { return start; }
+    public LocalDateTime getEnd() { return end; }
+    public Money getCalculatedPrice() { return calculatedPrice; }
+    public BookingStatus getStatus() { return status; }
+    public Payment getPayment() { return payment; }
 
     public void confirm() {
         if (status != BookingStatus.PENDING) {
@@ -113,8 +94,8 @@ public class Booking {
                 "id='" + id + '\'' +
                 ", user=" + user.getDisplayName() +
                 ", resource=" + resource.getName() +
-                ", start=" + start +
-                ", end=" + end +
+                ", start=" + start.format(FORMATTER) +
+                ", end=" + end.format(FORMATTER) +
                 ", status=" + status +
                 ", price=" + calculatedPrice +
                 '}';

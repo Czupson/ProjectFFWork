@@ -14,27 +14,25 @@ public abstract class Payment {
         if (paymentId == null || paymentId.isBlank()) {
             throw new IllegalArgumentException("PaymentID cannot be empty");
         }
+
         this.amount = amount;
         this.paymentId = paymentId;
         this.status = PaymentStatus.INITIATED;
     }
+
     public Money getAmount() {
         return amount;
     }
+
     public String getPaymentId() {
         return paymentId;
     }
+
     public PaymentStatus getStatus() {
         return status;
     }
-    public abstract void capture();
 
-    public void refund() {
-        if (status != PaymentStatus.CAPTURED) {
-            throw new IllegalStateException("Only captured payment can be refunded");
-        }
-        status = PaymentStatus.REFUNDED;
-    }
+    public abstract void capture();
 
     protected void ensureNotCaptured() {
         if (status == PaymentStatus.CAPTURED) {

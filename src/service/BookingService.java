@@ -10,8 +10,6 @@ import discount.NoDiscount;
 import money.Money;
 import pricing.PricingPolicy;
 import repo.BookingRepository;
-import repo.ResourceRepository;
-import repo.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,30 +17,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class BookingService {
-
-    private final UserRepository userRepo;
-    private final ResourceRepository resourceRepo;
     private final BookingRepository bookingRepo;
     private final PricingPolicy pricingPolicy;
 
     private Discountable discount = new NoDiscount();
-
     private final AtomicInteger counter = new AtomicInteger(1);
 
-    public BookingService(
-            UserRepository userRepo,
-            ResourceRepository resourceRepo,
-            BookingRepository bookingRepo,
-            PricingPolicy policy
-    ) {
-        this.userRepo = userRepo;
-        this.resourceRepo = resourceRepo;
+    public BookingService(BookingRepository bookingRepo, PricingPolicy pricingPolicy) {
         this.bookingRepo = bookingRepo;
-        this.pricingPolicy = policy;
-    }
-
-    public void setDiscount(Discountable discount) {
-        this.discount = discount;
+        this.pricingPolicy = pricingPolicy;
     }
 
     public Booking book(User user, Resource resource, LocalDateTime start, LocalDateTime end) {
@@ -53,10 +36,8 @@ public class BookingService {
 
         checkConflicts(resource, start, end);
 
-        Booking temp = new Booking("TEMP", user, resource, start, end, Money.of("0"));
-
-        Money base = pricingPolicy.price(temp);
-        Money finalPrice = discount.apply(base, temp);
+        Money base = pricingPolicy.price(resource, start, end);
+        Money finalPrice = discount.apply(base, null);
 
         String id = generateId(start);
 
@@ -68,6 +49,26 @@ public class BookingService {
 
     public Booking book(User user, Resource resource, LocalDateTime start, int durationMinutes) {
         return book(user, resource, start, start.plusMinutes(durationMinutes));
+    }
+
+    public void confirm(String bookingId) {
+        find(bookingId).confirm();
+    }
+
+    public void cancel(String bookingId) {
+        find(bookingId).cancel();
+    }
+
+    public void complete(String bookingId) {
+        find(bookingId).complete();
+    }
+
+    public List<Booking> list() {
+        return bookingRepo.findAll();
+    }
+
+    public void setDiscount(Discountable discount) {
+        this.discount = discount;
     }
 
     private void checkConflicts(Resource resource, LocalDateTime start, LocalDateTime end) {
@@ -102,22 +103,6 @@ public class BookingService {
                 start.getDayOfMonth());
 
         return "BK-" + date + "-" + counter.getAndIncrement();
-    }
-
-    public void confirm(String bookingId) {
-        find(bookingId).confirm();
-    }
-
-    public void cancel(String bookingId) {
-        find(bookingId).cancel();
-    }
-
-    public void complete(String bookingId) {
-        find(bookingId).complete();
-    }
-
-    public List<Booking> list() {
-        return bookingRepo.findAll();
     }
 
     private Booking find(String id) {

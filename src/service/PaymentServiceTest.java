@@ -28,13 +28,8 @@ class PaymentServiceTest {
 
     @BeforeEach
     void setUp() {
-        var userRepo = new InMemoryUserRepository();
-        var resourceRepo = new InMemoryResourceRepository();
         var bookingRepo = new InMemoryBookingRepository();
-
         bookingService = new BookingService(
-                userRepo,
-                resourceRepo,
                 bookingRepo,
                 new StandardPricing()
         );
@@ -53,6 +48,7 @@ class PaymentServiceTest {
 
         bookingService.confirm(booking.getId());
     }
+
 
     @Test
     void shouldPayBooking() {
@@ -97,5 +93,22 @@ class PaymentServiceTest {
     void shouldThrowWhenBookingNotFound() {
         assertThrows(IllegalArgumentException.class,
                 () -> paymentService.pay("INVALID", "1234"));
+    }
+
+    @Test
+    void shouldPayWithWallet() {
+        Payment payment = paymentService.payWithWallet(booking.getId());
+
+        assertEquals(PaymentStatus.CAPTURED, payment.getStatus());
+        assertEquals(payment, booking.getPayment());
+    }
+
+    @Test
+    void shouldRefundWalletPayment() {
+        paymentService.payWithWallet(booking.getId());
+
+        paymentService.refund(booking.getId());
+
+        assertEquals(PaymentStatus.REFUNDED, booking.getPayment().getStatus());
     }
 }

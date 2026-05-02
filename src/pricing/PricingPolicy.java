@@ -1,8 +1,10 @@
 package pricing;
 
-import domain.booking.Booking;
+import domain.resource.Resource;
 import money.Money;
 
+import java.time.LocalDateTime;
+
 public interface PricingPolicy {
-    Money price(Booking booking);
+    Money price(Resource resource, LocalDateTime start, LocalDateTime end);
 }

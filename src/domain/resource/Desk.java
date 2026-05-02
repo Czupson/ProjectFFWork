@@ -3,14 +3,19 @@ package domain.resource;
 import money.Money;
 
 public class Desk extends Resource {
+
     public enum DeskType { HOT, FIXED }
+
+    private static final Money HOT_RATE = Money.of(25);
+    private static final Money FIXED_RATE = Money.of(40);
+
     private final DeskType type;
 
     public Desk(String name, DeskType type, Money customRate) {
         super(name, customRate);
 
         if (type == null) {
-            throw new NullPointerException("type is null");
+            throw new IllegalArgumentException("type cannot be null");
         }
 
         this.type = type;
@@ -22,7 +27,7 @@ public class Desk extends Resource {
 
     @Override
     protected Money baseRatePerHour() {
-        return (type == DeskType.HOT) ? Money.of(25) : Money.of(40);
+        return (type == DeskType.HOT) ? HOT_RATE : FIXED_RATE;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package service;
 
 import billing.Invoice;
+import billing.SimpleBillingService;
 import domain.booking.Booking;
 import domain.resource.Room;
 import domain.user.IndividualUser;
@@ -21,7 +22,7 @@ class BillingServiceTest {
 
     private BookingService bookingService;
     private PaymentService paymentService;
-    private BillingService billingService;
+    private SimpleBillingService billingService;
 
     private Booking booking;
 
@@ -30,14 +31,12 @@ class BillingServiceTest {
         var bookingRepo = new InMemoryBookingRepository();
 
         bookingService = new BookingService(
-                new InMemoryUserRepository(),
-                new InMemoryResourceRepository(),
                 bookingRepo,
                 new StandardPricing()
         );
 
         paymentService = new PaymentService(bookingRepo);
-        billingService = new BillingService();
+        billingService = new SimpleBillingService();
 
         var user = new IndividualUser("test@mail.com", "Test User");
         var room = new Room("Room1", 10, Set.of("projector"), Money.of("80"));
@@ -69,4 +68,14 @@ class BillingServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> billingService.toInvoice(booking));
     }
+
+    @Test
+    void shouldGenerateProperInvoiceNumberFormat() {
+        paymentService.pay(booking.getId(), "1234");
+
+        Invoice invoice = billingService.toInvoice(booking);
+
+        assertTrue(invoice.getInvoiceNumber().matches("INV-\\d{8}-\\d+"));
+    }
+
 }
